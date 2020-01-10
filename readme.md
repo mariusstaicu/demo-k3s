@@ -1,0 +1,196 @@
+### Prerequisites
+
+install kubectl
+install kubectx (kctx)
+install kubens (kns)
+install k9s
+
+### Getting started
+
+install k3s
+curl -sfL https://get.k3s.io | sh -
+
+### generate project
+- start.spring.io - web, actuator
+
+### make some example controller
+```java
+@RestController
+public class LivenessController {
+
+    @GetMapping("/liveness")
+    public ResponseEntity<Map<String, String>> get() {
+        return ResponseEntity.ok(Collections.singletonMap("status", "UP"));
+    }
+}
+```
+
+###configure jib
+
+```xml
+<plugin>
+    <groupId>com.google.cloud.tools</groupId>
+    <artifactId>jib-maven-plugin</artifactId>
+    <version>1.8.0</version>
+    <configuration>
+        <from>
+            <image>gcr.io/distroless/java:11</image>
+        </from>
+        <to>
+            <image>nexus.esolutions.ro/demo-k3s</image>
+        </to>
+        <container>
+            <jvmFlags>
+                <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>
+            </jvmFlags>
+        </container>
+    </configuration>
+</plugin>
+```
+
+### test jib build is working 
+
+### dockerfile (optional)
+
+```dockerfile
+FROM anapsix/alpine-java:8
+ADD target/command-service-exec.jar command-service.jar
+ENV JAVA_OPTS=""
+ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar command-service.jar
+```
+
+### k8s deployment
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-k3s
+  namespace: default
+  labels:
+    app: demo-k3s
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-k3s
+  template:
+    metadata:
+      labels:
+        app: demo-k3s
+    spec:
+      imagePullSecrets:
+      - name: nexus-registry-credentials
+      containers:
+      - name: demo-k3s
+        image: nexus.esolutions.ro/demo-k3s
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 600M
+          limits:
+            cpu: 1
+            memory: 1.2G
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 60
+          failureThreshold: 1
+        env:
+        - name: JAVA_OPTS
+          value: "-Xms200m -Xmx680m -XX:MaxMetaspaceSize=180m -XX:+UseG1GC -XX:+UseStringDeduplication -Duser.timezone=UTC -Dfile.encoding=UTF-8"
+        - name: APP_ENV
+          value: 'local'
+
+```
+
+### initialize skaffold
+```bash
+skaffold init --XXenableJibInit
+```
+
+### adjust some skaffold stuff - eg. tag policy or deployment files :)
+```yaml
+apiVersion: skaffold/v2alpha1
+kind: Config
+metadata:
+  name: demo-k3s
+build:
+  tagPolicy:
+    envTemplate:
+      template: "{{.IMAGE_NAME}}:{{.USER}}"
+  artifacts:
+  - image: nexus.esolutions.ro/demo-k3s
+    jib:
+      args:
+      - -Dmaven.test.skip
+deploy:
+  kubectl:
+    manifests:
+    - deployment/local/*.yml
+```
+
+### first build & deploy to k8s
+ ```bash
+skaffold build 
+```
+
+ ```bash
+skaffold run --tail
+```
+
+ ```bash
+skaffold dev --no-cleanup
+```
+
+```bash
+skaffold debug
+```
+
+###expose deployment
+- create a service
+```bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-k3s
+  namespace: default
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: demo-k3s
+```
+
+-create an ingress
+```bash
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: demo-k3s
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    #traefik.ingress.kubernetes.io/redirect-entry-point: https
+    #traefik.ingress.kubernetes.io/redirect-permanent: "true"
+spec:
+  rules:
+    - host: demo-k3s.localhost
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: demo-k3s
+              servicePort: http
+```
