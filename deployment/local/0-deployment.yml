@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-k3s
+  namespace: default
+  labels:
+    app: demo-k3s
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-k3s
+  template:
+    metadata:
+      labels:
+        app: demo-k3s
+    spec:
+      imagePullSecrets:
+        - name: nexus-registry-credentials
+      containers:
+        - name: demo-k3s
+          image: nexus.esolutions.ro/demo-k3s
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 600M
+            limits:
+              cpu: 1
+              memory: 1.2G
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 8080
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+          env:
+            - name: JAVA_OPTS
+              value: "-Xms200m -Xmx680m -XX:MaxMetaspaceSize=180m -XX:+UseG1GC -XX:+UseStringDeduplication -Duser.timezone=UTC -Dfile.encoding=UTF-8"
+            - name: APP_ENV
+              value: 'local'

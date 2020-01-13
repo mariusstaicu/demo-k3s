@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: demo-k3s
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    #traefik.ingress.kubernetes.io/redirect-entry-point: https
+    #traefik.ingress.kubernetes.io/redirect-permanent: "true"
+spec:
+  rules:
+    - host: demo-k3s.localhost
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: demo-k3s
+              servicePort: http

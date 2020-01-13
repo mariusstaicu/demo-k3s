@@ -1,17 +1,20 @@
 ### Prerequisites
 
-install kubectl
-install kubectx (kctx)
-install kubens (kns)
-install k9s
+- install kubectl
+- install kubectx (kctx)
+- install kubens (kns)
+- install k9s
+- install skaffold
 
 ### Getting started
 
-install k3s
+- install k3s
+```shell script
 curl -sfL https://get.k3s.io | sh -
+```
 
 ### generate project
-- start.spring.io - web, actuator
+- start.spring.io - web, actuator, micrometer prometheus
 
 ### make some example controller
 ```java
@@ -50,16 +53,32 @@ public class LivenessController {
 
 ### test jib build is working 
 
+```shell script
+mvn jib:build
+mvn jib:dockerBuild
+```
+
 ### dockerfile (optional)
 
 ```dockerfile
 FROM anapsix/alpine-java:8
-ADD target/command-service-exec.jar command-service.jar
+ADD target/demo-k3s.jar demo-k3s.jar
 ENV JAVA_OPTS=""
-ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar command-service.jar
+ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar demo-k3s.jar
 ```
 
 ### k8s deployment
+- create image pull secrets
+-- from file:
+```shell script
+ kubectl create secret generic nexus-registry-credentials --from-file=.dockerconfigjson=/home/marius/.docker/config.json --type=kubernetes.io/dockerconfigjson
+```
+
+--from credentials:
+```shell script
+kubectl create secret docker-registry nexus-registry-credentials --docker-server=nexus.esolutions.ro --docker-username=<username-here> --docker-password=<password-here> --docker-email=<email-here>
+```
+
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -94,17 +113,12 @@ spec:
             memory: 1.2G
         livenessProbe:
           httpGet:
-            path: /actuator/health
+            path: /liveness
             port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 60
-          failureThreshold: 1
         env:
         - name: JAVA_OPTS
           value: "-Xms200m -Xmx680m -XX:MaxMetaspaceSize=180m -XX:+UseG1GC -XX:+UseStringDeduplication -Duser.timezone=UTC -Dfile.encoding=UTF-8"
@@ -140,18 +154,22 @@ deploy:
 ```
 
 ### first build & deploy to k8s
+- test build
  ```bash
 skaffold build 
 ```
 
+- test deploy
  ```bash
 skaffold run --tail
 ```
 
+- dev mode
  ```bash
 skaffold dev --no-cleanup
 ```
 
+- debug mode
 ```bash
 skaffold debug
 ```
@@ -169,6 +187,9 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
+    - name: debug
+      port: 5005
+      targetPort: 5005
   selector:
     app: demo-k3s
 ```
