@@ -59,10 +59,10 @@ mvn jib:build
 mvn jib:dockerBuild
 ```
 
-### dockerfile (optional)
+### dockerfile (optional) - for jib building with docker
 
 ```dockerfile
-FROM anapsix/alpine-java:8
+FROM gcr.io/distroless/java:11
 ADD target/demo-k3s.jar demo-k3s.jar
 ENV JAVA_OPTS=""
 ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar demo-k3s.jar
