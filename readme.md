@@ -1,10 +1,11 @@
 ### Prerequisites
 
 - install kubectl
-- install kubectx (kctx)
-- install kubens (kns)
-- install k9s
-- install skaffold
+- install k9s (https://github.com/derailed/k9s)
+- install skaffold (https://skaffold.dev/)
+
+### Optional:
+- install kubectx (kctx) and kubens (kns) (https://github.com/ahmetb/kubectx)
 
 ### Getting started
 
