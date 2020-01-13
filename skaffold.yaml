@@ -1,0 +1,17 @@
+apiVersion: skaffold/v2alpha1
+kind: Config
+metadata:
+  name: demo-k3s
+build:
+  tagPolicy:
+    envTemplate:
+      template: "{{.IMAGE_NAME}}:{{.USER}}"
+  artifacts:
+    - image: nexus.esolutions.ro/demo-k3s
+      jib:
+        args:
+          - -Dmaven.test.skip
+deploy:
+  kubectl:
+    manifests:
+      - deployment/local/*.yml

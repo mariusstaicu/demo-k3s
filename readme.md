@@ -28,7 +28,7 @@ public class LivenessController {
 }
 ```
 
-###configure jib
+### configure jib
 
 ```xml
 <plugin>
@@ -68,17 +68,18 @@ ENTRYPOINT exec java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar dem
 ```
 
 ### k8s deployment
-- create image pull secrets
--- from file:
-```shell script
- kubectl create secret generic nexus-registry-credentials --from-file=.dockerconfigjson=/home/marius/.docker/config.json --type=kubernetes.io/dockerconfigjson
-```
+* create image pull secrets
+  * from file:
+    ```shell script
+     kubectl create secret generic nexus-registry-credentials --from-file=.dockerconfigjson=/home/marius/.docker/config.json --type=kubernetes.io/dockerconfigjson
+    ```
 
---from credentials:
-```shell script
-kubectl create secret docker-registry nexus-registry-credentials --docker-server=nexus.esolutions.ro --docker-username=<username-here> --docker-password=<password-here> --docker-email=<email-here>
-```
+  * from credentials:
+    ```shell script
+    kubectl create secret docker-registry nexus-registry-credentials --docker-server=nexus.esolutions.ro --docker-username=<username-here> --docker-password=<password-here> --docker-email=<email-here>
+    ```
 
+* create deployment
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -155,26 +156,27 @@ deploy:
 
 ### first build & deploy to k8s
 - test build
- ```bash
-skaffold build 
-```
+     ```bash
+    skaffold build 
+    ```
 
 - test deploy
- ```bash
-skaffold run --tail
-```
+     ```bash
+    skaffold run --tail
+    ```
 
 - dev mode
- ```bash
-skaffold dev --no-cleanup
-```
+    ```bash
+    skaffold dev --no-cleanup
+    ```
 
 - debug mode
-```bash
-skaffold debug
-```
+    ```bash
+    skaffold debug
+    ```
 
 ###expose deployment
+
 - create a service
 ```bash
 apiVersion: v1
@@ -194,7 +196,7 @@ spec:
     app: demo-k3s
 ```
 
--create an ingress
+- create an ingress
 ```bash
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -214,4 +216,11 @@ spec:
             backend:
               serviceName: demo-k3s
               servicePort: http
+```
+
+- play with skaffold
+```shell script
+skaffold dev --cleanup=false #no cleanup after dev cli closes
+skaffold dev --skip-tests #to skip tests in dev mode 
+skaffold dev --trigger=polling -- watch-poll-interval=1000 #to poll for changes once in a while
 ```
