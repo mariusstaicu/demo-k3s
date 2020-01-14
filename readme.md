@@ -8,10 +8,16 @@
 - install kubectx (kctx) and kubens (kns) (https://github.com/ahmetb/kubectx)
 
 ### Getting started
-
 - install k3s
 ```shell script
 curl -sfL https://get.k3s.io | sh -
+```
+
+- import kube config yaml
+```shell script
+sudo cat /etc/rancher/k3s/k3s.yaml | sed 's/name: default/name: k3s/g' | sed 's/cluster: default/cluster: k3s/g' | sed 's/user: default/user: k3s/g' | sed 's/current-context: default/current-context: k3s/g' > ~/.kube/k3s.yml
+echo "export KUBECONFIG=~/.kube/config:~/.kube/k3s.yml" >> ~/.bashrc
+source ~/.bashrc
 ```
 
 ### generate project
